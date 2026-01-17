@@ -26,6 +26,9 @@ ASYNC_URL = os.getenv("DATABASE_URL")  # optional, if you keep one source of tru
 
 def run_migrations_offline() -> None:
     url = ALEMBIC_DATABASE_URL or (ASYNC_URL and ASYNC_URL.replace("+asyncpg", ""))
+    # Конвертируем postgresql:// в postgresql+psycopg:// для psycopg3
+    if url and url.startswith("postgresql://") and "+psycopg" not in url:
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
     assert url, "Set ALEMBIC_DATABASE_URL or DATABASE_URL"
     context.configure(
         url=url,
@@ -50,9 +53,13 @@ async def run_async_migrations() -> None:
 
 def run_migrations_online() -> None:
     if ALEMBIC_DATABASE_URL:
-        # Use sync connection path (psycopg)
+        # Use sync connection path (psycopg3)
         from sqlalchemy import create_engine
-        connectable = create_engine(ALEMBIC_DATABASE_URL)
+        # Конвертируем postgresql:// в postgresql+psycopg:// для psycopg3
+        url = ALEMBIC_DATABASE_URL
+        if url.startswith("postgresql://") and "+psycopg" not in url:
+            url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+        connectable = create_engine(url)
         with connectable.connect() as connection:
             do_run_migrations(connection)
         connectable.dispose()
