@@ -34,12 +34,19 @@ def theme_to_domain(theme_model: Themes) -> Theme:
     """Преобразование модели БД в доменную сущность"""
     return Theme(
         user_id=theme_model.user_id,
-        text_color=theme_model.text_color,
-        main_bg_color=theme_model.main_bg_color,
-        second_bg_color=theme_model.second_bg_color,
-        contrast_color=theme_model.contrast_color,
-        highlight_color=theme_model.highlight_color,
-        blur_transparency=theme_model.blur_transparency,
+        backgroundColor=theme_model.backgroundColor,
+        backgroundColorMain=theme_model.backgroundColorMain,
+        backgroundColorSub=theme_model.backgroundColorSub,
+        boxShadow=theme_model.boxShadow,
+        danger=theme_model.danger,
+        border=theme_model.border,
+        subtext=theme_model.subtext,
+        text=theme_model.text,
+        attention=theme_model.attention,
+        glowColor=theme_model.glowColor,
+        glowOpacity=theme_model.glowOpacity,
+        cards=theme_model.cards,
+        circleColor=theme_model.circleColor,
         updated_at=theme_model.updated_at
     )
 
@@ -48,12 +55,19 @@ def theme_to_model(theme: Theme) -> Themes:
     """Преобразование доменной сущности в модель БД"""
     return Themes(
         user_id=theme.user_id,
-        text_color=theme.text_color,
-        main_bg_color=theme.main_bg_color,
-        second_bg_color=theme.second_bg_color,
-        contrast_color=theme.contrast_color,
-        highlight_color=theme.highlight_color,
-        blur_transparency=theme.blur_transparency,
+        backgroundColor=theme.backgroundColor,
+        backgroundColorMain=theme.backgroundColorMain,
+        backgroundColorSub=theme.backgroundColorSub,
+        boxShadow=theme.boxShadow,
+        danger=theme.danger,
+        border=theme.border,
+        subtext=theme.subtext,
+        text=theme.text,
+        attention=theme.attention,
+        glowColor=theme.glowColor,
+        glowOpacity=theme.glowOpacity,
+        cards=theme.cards,
+        circleColor=theme.circleColor,
         updated_at=theme.updated_at
     )
 

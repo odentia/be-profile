@@ -70,12 +70,19 @@ class Profiles(Base):
 class Themes(Base):
     """Таблица тем пользователей"""
     user_id: Mapped[UUIDStr] = mapped_column(primary_key=True)
-    text_color: Mapped[str] = mapped_column(String(7), default="#ffffff", nullable=False)
-    main_bg_color: Mapped[str] = mapped_column(String(7), default="#14141A", nullable=False)
-    second_bg_color: Mapped[str] = mapped_column(String(7), default="#272A33", nullable=False)
-    contrast_color: Mapped[str] = mapped_column(String(7), default="#6C63FF", nullable=False)
-    highlight_color: Mapped[str] = mapped_column(String(7), default="#A785FF", nullable=False)
-    blur_transparency: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    backgroundColor: Mapped[str] = mapped_column(String(50), default="#14141A", nullable=False)
+    backgroundColorMain: Mapped[str] = mapped_column(String(50), default="#14141A", nullable=False)
+    backgroundColorSub: Mapped[str] = mapped_column(String(50), default="#272A33", nullable=False)
+    boxShadow: Mapped[str] = mapped_column(String(100), default="rgba(0, 0, 0, 0.1)", nullable=False)
+    danger: Mapped[str] = mapped_column(String(50), default="#ff4444", nullable=False)
+    border: Mapped[str] = mapped_column(String(50), default="#272A33", nullable=False)
+    subtext: Mapped[str] = mapped_column(String(50), default="#a0a0a0", nullable=False)
+    text: Mapped[str] = mapped_column(String(50), default="#ffffff", nullable=False)
+    attention: Mapped[str] = mapped_column(String(50), default="#ffaa00", nullable=False)
+    glowColor: Mapped[str] = mapped_column(String(50), default="#6C63FF", nullable=False)
+    glowOpacity: Mapped[str] = mapped_column(String(10), default="0.3", nullable=False)
+    cards: Mapped[str] = mapped_column(String(50), default="#1e1e24", nullable=False)
+    circleColor: Mapped[str] = mapped_column(String(50), default="#6C63FF", nullable=False)
     
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False

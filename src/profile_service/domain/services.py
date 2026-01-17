@@ -104,23 +104,37 @@ class ThemeService:
             default_theme = Theme(user_id=user_id)
             return ThemeResponse(
                 user_id=default_theme.user_id,
-                text_color=default_theme.text_color,
-                main_bg_color=default_theme.main_bg_color,
-                second_bg_color=default_theme.second_bg_color,
-                contrast_color=default_theme.contrast_color,
-                highlight_color=default_theme.highlight_color,
-                blur_transparency=default_theme.blur_transparency,
+                backgroundColor=default_theme.backgroundColor,
+                backgroundColorMain=default_theme.backgroundColorMain,
+                backgroundColorSub=default_theme.backgroundColorSub,
+                boxShadow=default_theme.boxShadow,
+                danger=default_theme.danger,
+                border=default_theme.border,
+                subtext=default_theme.subtext,
+                text=default_theme.text,
+                attention=default_theme.attention,
+                glowColor=default_theme.glowColor,
+                glowOpacity=default_theme.glowOpacity,
+                cards=default_theme.cards,
+                circleColor=default_theme.circleColor,
                 updated_at=default_theme.updated_at
             )
         
         return ThemeResponse(
             user_id=theme.user_id,
-            text_color=theme.text_color,
-            main_bg_color=theme.main_bg_color,
-            second_bg_color=theme.second_bg_color,
-            contrast_color=theme.contrast_color,
-            highlight_color=theme.highlight_color,
-            blur_transparency=theme.blur_transparency,
+            backgroundColor=theme.backgroundColor,
+            backgroundColorMain=theme.backgroundColorMain,
+            backgroundColorSub=theme.backgroundColorSub,
+            boxShadow=theme.boxShadow,
+            danger=theme.danger,
+            border=theme.border,
+            subtext=theme.subtext,
+            text=theme.text,
+            attention=theme.attention,
+            glowColor=theme.glowColor,
+            glowOpacity=theme.glowOpacity,
+            cards=theme.cards,
+            circleColor=theme.circleColor,
             updated_at=theme.updated_at
         )
     
@@ -137,18 +151,32 @@ class ThemeService:
             theme = Theme(user_id=user_id)
         
         # Обновляем только переданные поля
-        if request.text_color is not None:
-            theme.text_color = request.text_color
-        if request.main_bg_color is not None:
-            theme.main_bg_color = request.main_bg_color
-        if request.second_bg_color is not None:
-            theme.second_bg_color = request.second_bg_color
-        if request.contrast_color is not None:
-            theme.contrast_color = request.contrast_color
-        if request.highlight_color is not None:
-            theme.highlight_color = request.highlight_color
-        if request.blur_transparency is not None:
-            theme.blur_transparency = request.blur_transparency
+        if request.backgroundColor is not None:
+            theme.backgroundColor = request.backgroundColor
+        if request.backgroundColorMain is not None:
+            theme.backgroundColorMain = request.backgroundColorMain
+        if request.backgroundColorSub is not None:
+            theme.backgroundColorSub = request.backgroundColorSub
+        if request.boxShadow is not None:
+            theme.boxShadow = request.boxShadow
+        if request.danger is not None:
+            theme.danger = request.danger
+        if request.border is not None:
+            theme.border = request.border
+        if request.subtext is not None:
+            theme.subtext = request.subtext
+        if request.text is not None:
+            theme.text = request.text
+        if request.attention is not None:
+            theme.attention = request.attention
+        if request.glowColor is not None:
+            theme.glowColor = request.glowColor
+        if request.glowOpacity is not None:
+            theme.glowOpacity = request.glowOpacity
+        if request.cards is not None:
+            theme.cards = request.cards
+        if request.circleColor is not None:
+            theme.circleColor = request.circleColor
         
         theme.updated_at = datetime.utcnow()
         
@@ -160,12 +188,19 @@ class ThemeService:
         
         return ThemeResponse(
             user_id=updated_theme.user_id,
-            text_color=updated_theme.text_color,
-            main_bg_color=updated_theme.main_bg_color,
-            second_bg_color=updated_theme.second_bg_color,
-            contrast_color=updated_theme.contrast_color,
-            highlight_color=updated_theme.highlight_color,
-            blur_transparency=updated_theme.blur_transparency,
+            backgroundColor=updated_theme.backgroundColor,
+            backgroundColorMain=updated_theme.backgroundColorMain,
+            backgroundColorSub=updated_theme.backgroundColorSub,
+            boxShadow=updated_theme.boxShadow,
+            danger=updated_theme.danger,
+            border=updated_theme.border,
+            subtext=updated_theme.subtext,
+            text=updated_theme.text,
+            attention=updated_theme.attention,
+            glowColor=updated_theme.glowColor,
+            glowOpacity=updated_theme.glowOpacity,
+            cards=updated_theme.cards,
+            circleColor=updated_theme.circleColor,
             updated_at=updated_theme.updated_at
         )
     
@@ -177,12 +212,19 @@ class ThemeService:
         
         return ThemeResponse(
             user_id=theme.user_id,
-            text_color=theme.text_color,
-            main_bg_color=theme.main_bg_color,
-            second_bg_color=theme.second_bg_color,
-            contrast_color=theme.contrast_color,
-            highlight_color=theme.highlight_color,
-            blur_transparency=theme.blur_transparency,
+            backgroundColor=theme.backgroundColor,
+            backgroundColorMain=theme.backgroundColorMain,
+            backgroundColorSub=theme.backgroundColorSub,
+            boxShadow=theme.boxShadow,
+            danger=theme.danger,
+            border=theme.border,
+            subtext=theme.subtext,
+            text=theme.text,
+            attention=theme.attention,
+            glowColor=theme.glowColor,
+            glowOpacity=theme.glowOpacity,
+            cards=theme.cards,
+            circleColor=theme.circleColor,
             updated_at=theme.updated_at
         )
     
@@ -199,12 +241,19 @@ class ThemeService:
         
         # Создаем ThemeUpdateRequest из темы источника
         import_request = ThemeUpdateRequest(
-            text_color=source_theme.text_color,
-            main_bg_color=source_theme.main_bg_color,
-            second_bg_color=source_theme.second_bg_color,
-            contrast_color=source_theme.contrast_color,
-            highlight_color=source_theme.highlight_color,
-            blur_transparency=source_theme.blur_transparency
+            backgroundColor=source_theme.backgroundColor,
+            backgroundColorMain=source_theme.backgroundColorMain,
+            backgroundColorSub=source_theme.backgroundColorSub,
+            boxShadow=source_theme.boxShadow,
+            danger=source_theme.danger,
+            border=source_theme.border,
+            subtext=source_theme.subtext,
+            text=source_theme.text,
+            attention=source_theme.attention,
+            glowColor=source_theme.glowColor,
+            glowOpacity=source_theme.glowOpacity,
+            cards=source_theme.cards,
+            circleColor=source_theme.circleColor
         )
         
         # Обновляем тему целевого пользователя

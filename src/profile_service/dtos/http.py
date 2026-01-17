@@ -17,23 +17,37 @@ from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
 class ThemeUpdateRequest(BaseModel):
     """Запрос на обновление темы"""
-    text_color: Optional[str] = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
-    main_bg_color: Optional[str] = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
-    second_bg_color: Optional[str] = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
-    contrast_color: Optional[str] = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
-    highlight_color: Optional[str] = Field(None, pattern=r"^#[0-9A-Fa-f]{6}$")
-    blur_transparency: Optional[int] = Field(None, ge=0, le=100)
+    backgroundColor: Optional[str] = None
+    backgroundColorMain: Optional[str] = None
+    backgroundColorSub: Optional[str] = None
+    boxShadow: Optional[str] = None
+    danger: Optional[str] = None
+    border: Optional[str] = None
+    subtext: Optional[str] = None
+    text: Optional[str] = None
+    attention: Optional[str] = None
+    glowColor: Optional[str] = None
+    glowOpacity: Optional[str] = None
+    cards: Optional[str] = None
+    circleColor: Optional[str] = None
 
 
 class ThemeResponse(BaseModel):
     """Ответ с темой"""
     user_id: str
-    text_color: str
-    main_bg_color: str
-    second_bg_color: str
-    contrast_color: str
-    highlight_color: str
-    blur_transparency: int
+    backgroundColor: str
+    backgroundColorMain: str
+    backgroundColorSub: str
+    boxShadow: str
+    danger: str
+    border: str
+    subtext: str
+    text: str
+    attention: str
+    glowColor: str
+    glowOpacity: str
+    cards: str
+    circleColor: str
     updated_at: datetime
 
 
