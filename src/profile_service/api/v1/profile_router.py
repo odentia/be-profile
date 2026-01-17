@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Request
 from profile_service.dtos.http import (
     ProfileUpdateRequest, ProfileResponse,
     ThemeUpdateRequest, ThemeResponse,
+    ThemeImportRequest,
     PasswordChangeRequest, DeleteAccountRequest
 )
 from profile_service.domain.services import ProfileService, ThemeService, PasswordService
@@ -78,6 +79,44 @@ async def update_theme(
     user_id = await get_current_user_id(request)
     service = ThemeService(theme_repo)
     result = await service.update_theme(user_id, request_data)
+    
+    return result
+
+
+@profile_router.get("/theme/{user_id}", response_model=ThemeResponse)
+async def get_theme_by_user_id(
+    user_id: str,
+    theme_repo=Depends(get_theme_repo)
+):
+    """Получить тему пользователя по его ID (публичный endpoint)"""
+    service = ThemeService(theme_repo)
+    result = await service.get_theme_by_user_id(user_id)
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Theme not found"
+        )
+    
+    return result
+
+
+@profile_router.post("/theme/import", response_model=ThemeResponse)
+async def import_theme(
+    request_data: ThemeImportRequest,
+    request: Request,
+    theme_repo=Depends(get_theme_repo)
+):
+    """Импортировать тему от другого пользователя в свой профиль"""
+    target_user_id = await get_current_user_id(request)
+    service = ThemeService(theme_repo)
+    result = await service.import_theme(target_user_id, request_data.user_id)
+    
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Source theme not found"
+        )
     
     return result
 

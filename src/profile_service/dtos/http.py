@@ -66,3 +66,7 @@ class DeleteAccountRequest(BaseModel):
     """Запрос на удаление аккаунта"""
     password: str  # Подтверждение паролем
 
+
+class ThemeImportRequest(BaseModel):
+    """Запрос на импорт темы от другого пользователя"""
+    user_id: str = Field(..., description="ID пользователя, чью тему нужно импортировать")

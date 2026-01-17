@@ -9,6 +9,7 @@ from profile_service.domain.repositories import ProfileRepository, ThemeReposito
 from profile_service.dtos.http import (
     ProfileUpdateRequest, ProfileResponse,
     ThemeUpdateRequest, ThemeResponse,
+    ThemeImportRequest,
     PasswordChangeRequest
 )
 
@@ -167,3 +168,44 @@ class ThemeService:
             blur_transparency=updated_theme.blur_transparency,
             updated_at=updated_theme.updated_at
         )
+    
+    async def get_theme_by_user_id(self, user_id: str) -> Optional[ThemeResponse]:
+        """Получить тему пользователя по его ID (публичный метод)"""
+        theme = await self.theme_repo.get_by_user_id(user_id)
+        if not theme:
+            return None
+        
+        return ThemeResponse(
+            user_id=theme.user_id,
+            text_color=theme.text_color,
+            main_bg_color=theme.main_bg_color,
+            second_bg_color=theme.second_bg_color,
+            contrast_color=theme.contrast_color,
+            highlight_color=theme.highlight_color,
+            blur_transparency=theme.blur_transparency,
+            updated_at=theme.updated_at
+        )
+    
+    async def import_theme(
+        self,
+        target_user_id: str,
+        source_user_id: str
+    ) -> ThemeResponse:
+        """Импортировать тему от другого пользователя в свой профиль"""
+        # Получаем тему источника
+        source_theme = await self.theme_repo.get_by_user_id(source_user_id)
+        if not source_theme:
+            return None
+        
+        # Создаем ThemeUpdateRequest из темы источника
+        import_request = ThemeUpdateRequest(
+            text_color=source_theme.text_color,
+            main_bg_color=source_theme.main_bg_color,
+            second_bg_color=source_theme.second_bg_color,
+            contrast_color=source_theme.contrast_color,
+            highlight_color=source_theme.highlight_color,
+            blur_transparency=source_theme.blur_transparency
+        )
+        
+        # Обновляем тему целевого пользователя
+        return await self.update_theme(target_user_id, import_request)
