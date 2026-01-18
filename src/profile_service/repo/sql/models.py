@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Annotated, Any, TypeVar
 
-from sqlalchemy import String, Integer, DateTime
+from sqlalchemy import String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -4,14 +4,12 @@ from datetime import datetime
 from typing import Optional
 
 from passlib.context import CryptContext
-from profile_service.domain.models import Profile, Theme
+from profile_service.domain.models import Theme
 from profile_service.domain.repositories import ProfileRepository, ThemeRepository
 from profile_service.domain.events import ProfileUpdatedEvent, ThemeUpdatedEvent, AccountDeletedEvent
 from profile_service.dtos.http import (
     ProfileUpdateRequest, ProfileResponse,
-    ThemeUpdateRequest, ThemeResponse,
-    ThemeImportRequest,
-    PasswordChangeRequest
+    ThemeUpdateRequest, ThemeResponse
 )
 
 

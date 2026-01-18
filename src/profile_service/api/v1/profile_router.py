@@ -8,7 +8,7 @@ from profile_service.dtos.http import (
     ThemeImportRequest,
     PasswordChangeRequest, DeleteAccountRequest
 )
-from profile_service.domain.services import ProfileService, ThemeService, PasswordService
+from profile_service.domain.services import ProfileService, ThemeService
 from profile_service.api.deps import (
     get_profile_repo, get_theme_repo, get_password_service, get_current_user_id, get_event_publisher
 )
@@ -134,7 +134,7 @@ async def change_password(
     password_service=Depends(get_password_service)
 ):
     """Изменить пароль пользователя"""
-    user_id = await get_current_user_id(request)
+    await get_current_user_id(request)  # Проверка авторизации
     # TODO: Интеграция с auth-service через clients/auth_client.py
     # auth_client = get_auth_client()
     # success = await auth_client.change_password(user_id, request_data.current_password, request_data.new_password)

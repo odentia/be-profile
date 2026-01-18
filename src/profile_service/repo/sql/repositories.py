@@ -6,7 +6,6 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from profile_service.domain.models import Profile, Theme
-from profile_service.domain.repositories import ProfileRepository, ThemeRepository
 from profile_service.repo.sql.models import Profiles, Themes
 from profile_service.repo.sql.mappers import (
     profile_to_domain, profile_to_model,

@@ -1,6 +1,4 @@
 import logging
-import sys
-from typing import Any
 
 # TODO: Использовать common-logging
 # from common_logging import init_logging, get_logger
