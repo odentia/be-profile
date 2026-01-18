@@ -11,6 +11,7 @@ from profile_service.core.config import Settings
 from profile_service.core.logging import get_logger
 from profile_service.domain.services import PasswordService
 from profile_service.repo.sql.repositories import SQLProfileRepository, SQLThemeRepository
+from profile_service.mq.publisher import EventPublisher
 
 log = get_logger(__name__)
 
@@ -52,6 +53,11 @@ def get_profile_repo(session: Annotated[AsyncSession, Depends(get_session)]) -> 
 def get_theme_repo(session: Annotated[AsyncSession, Depends(get_session)]) -> SQLThemeRepository:
     """Получить репозиторий тем"""
     return SQLThemeRepository(session)
+
+
+def get_event_publisher(request: Request) -> EventPublisher | None:
+    """Получить event publisher из app state"""
+    return getattr(request.app.state, "event_publisher", None)
 
 
 async def get_current_token(

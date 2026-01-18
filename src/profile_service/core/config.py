@@ -45,6 +45,12 @@ class Settings(BaseSettings):
     )
     sql_echo: bool = Field(default=False)
 
+    # --- RabbitMQ ---
+    rabbitmq_url: str = Field(
+        default="amqp://guest:guest@localhost:5672/",
+        description="RabbitMQ connection URL",
+    )
+
     # --- JWT (для проверки токенов) ---
     jwt_secret_key: str = Field(
         default="your-secret-key-change-in-production",

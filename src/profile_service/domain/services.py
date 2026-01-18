@@ -6,6 +6,7 @@ from typing import Optional
 from passlib.context import CryptContext
 from profile_service.domain.models import Profile, Theme
 from profile_service.domain.repositories import ProfileRepository, ThemeRepository
+from profile_service.domain.events import ProfileUpdatedEvent, ThemeUpdatedEvent, AccountDeletedEvent
 from profile_service.dtos.http import (
     ProfileUpdateRequest, ProfileResponse,
     ThemeUpdateRequest, ThemeResponse,
@@ -32,8 +33,9 @@ class PasswordService:
 class ProfileService:
     """Сервис для работы с профилями"""
     
-    def __init__(self, profile_repo: ProfileRepository):
+    def __init__(self, profile_repo: ProfileRepository, event_publisher=None):
         self.profile_repo = profile_repo
+        self.event_publisher = event_publisher
     
     async def get_profile(self, user_id: str) -> Optional[ProfileResponse]:
         """Получить профиль пользователя"""
@@ -75,6 +77,18 @@ class ProfileService:
         
         updated_profile = await self.profile_repo.update(profile)
         
+        # Публикуем событие обновления профиля
+        if self.event_publisher:
+            await self.event_publisher.publish(
+                ProfileUpdatedEvent(
+                    user_id=user_id,
+                    name=updated_profile.name,
+                    email=updated_profile.email,
+                    description=updated_profile.description,
+                    avatar_url=updated_profile.avatar_url
+                )
+            )
+        
         return ProfileResponse(
             user_id=updated_profile.user_id,
             name=updated_profile.name,
@@ -87,14 +101,23 @@ class ProfileService:
     
     async def delete_profile(self, user_id: str) -> bool:
         """Удалить профиль"""
-        return await self.profile_repo.delete(user_id)
+        deleted = await self.profile_repo.delete(user_id)
+        
+        # Публикуем событие удаления аккаунта
+        if deleted and self.event_publisher:
+            await self.event_publisher.publish(
+                AccountDeletedEvent(user_id=user_id)
+            )
+        
+        return deleted
 
 
 class ThemeService:
     """Сервис для работы с темами"""
     
-    def __init__(self, theme_repo: ThemeRepository):
+    def __init__(self, theme_repo: ThemeRepository, event_publisher=None):
         self.theme_repo = theme_repo
+        self.event_publisher = event_publisher
     
     async def get_theme(self, user_id: str) -> ThemeResponse:
         """Получить тему пользователя"""
@@ -185,6 +208,12 @@ class ThemeService:
             updated_theme = await self.theme_repo.update(theme)
         else:
             updated_theme = await self.theme_repo.create(theme)
+        
+        # Публикуем событие обновления темы
+        if self.event_publisher:
+            await self.event_publisher.publish(
+                ThemeUpdatedEvent(user_id=user_id)
+            )
         
         return ThemeResponse(
             user_id=updated_theme.user_id,
