@@ -6,9 +6,9 @@ from functools import lru_cache
 from typing import Literal
 
 try:
-    import tomllib 
+    import tomllib
 except ModuleNotFoundError:
-    import tomli as tomllib 
+    import tomli as tomllib
 
 from pydantic import AnyHttpUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -101,4 +101,3 @@ def _parse_cors_origins(raw: str | None) -> list[str]:
         return ["*"]
     parts = [p.strip() for p in raw.split(",") if p.strip()]
     return parts or ["*"]
-

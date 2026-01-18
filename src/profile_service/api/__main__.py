@@ -7,7 +7,7 @@ from profile_service.core.config import load_settings
 def main():
     settings = load_settings()
     app = create_app(settings)
-    
+
     uvicorn.run(
         app,
         host=settings.http_host,
@@ -18,4 +18,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

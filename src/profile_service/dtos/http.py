@@ -17,6 +17,7 @@ from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
 class ThemeUpdateRequest(BaseModel):
     """Запрос на обновление темы"""
+
     backgroundColor: Optional[str] = None
     backgroundColorMain: Optional[str] = None
     backgroundColorSub: Optional[str] = None
@@ -34,6 +35,7 @@ class ThemeUpdateRequest(BaseModel):
 
 class ThemeResponse(BaseModel):
     """Ответ с темой"""
+
     user_id: str
     backgroundColor: str
     backgroundColorMain: str
@@ -53,6 +55,7 @@ class ThemeResponse(BaseModel):
 
 class ProfileUpdateRequest(BaseModel):
     """Запрос на обновление профиля"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     avatar_url: Optional[HttpUrl] = None
@@ -61,6 +64,7 @@ class ProfileUpdateRequest(BaseModel):
 
 class ProfileResponse(BaseModel):
     """Ответ с профилем"""
+
     user_id: str
     name: str
     description: Optional[str]
@@ -72,15 +76,18 @@ class ProfileResponse(BaseModel):
 
 class PasswordChangeRequest(BaseModel):
     """Запрос на изменение пароля"""
+
     current_password: str
     new_password: str = Field(..., min_length=8, max_length=100)
 
 
 class DeleteAccountRequest(BaseModel):
     """Запрос на удаление аккаунта"""
+
     password: str  # Подтверждение паролем
 
 
 class ThemeImportRequest(BaseModel):
     """Запрос на импорт темы от другого пользователя"""
+
     user_id: str = Field(..., description="ID пользователя, чью тему нужно импортировать")

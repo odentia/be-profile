@@ -24,9 +24,12 @@ def get_settings(request: Request) -> Settings:
 
 
 def _get_session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
-    sf: async_sessionmaker[AsyncSession] | None = getattr(request.app.state, "session_factory", None)
+    sf: async_sessionmaker[AsyncSession] | None = getattr(
+        request.app.state, "session_factory", None
+    )
     if sf is None:
         from profile_service.core.db import get_session_factory as _fallback_get_sf
+
         sf = _fallback_get_sf()
     if sf is None:
         raise RuntimeError("Session factory is not initialized. Check lifespan startup.")
@@ -44,7 +47,9 @@ def get_password_service() -> PasswordService:
     return PasswordService()
 
 
-def get_profile_repo(session: Annotated[AsyncSession, Depends(get_session)]) -> SQLProfileRepository:
+def get_profile_repo(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> SQLProfileRepository:
     """Получить репозиторий профилей"""
     return SQLProfileRepository(session)
 
@@ -75,29 +80,25 @@ async def get_current_user_id(request: Request) -> str:
             detail="Missing bearer token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     token = auth_header.split(" ")[1]
-    
+
     # TODO: Интеграция с auth-service для проверки токена
     # Пока проверяем локально через JWT
     from jose import jwt
+
     settings = request.app.state.settings
     try:
         payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
         user_id = payload.get("sub")
         if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
         return user_id
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
         )
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-

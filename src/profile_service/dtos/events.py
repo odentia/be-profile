@@ -14,6 +14,7 @@ from datetime import datetime
 
 class ProfileUpdatedV1(BaseModel):
     """Событие обновления профиля"""
+
     user_id: str
     name: str
     email: str
@@ -22,12 +23,13 @@ class ProfileUpdatedV1(BaseModel):
 
 class ThemeUpdatedV1(BaseModel):
     """Событие обновления темы"""
+
     user_id: str
     updated_at: datetime
 
 
 class AccountDeletedV1(BaseModel):
     """Событие удаления аккаунта"""
+
     user_id: str
     deleted_at: datetime
-

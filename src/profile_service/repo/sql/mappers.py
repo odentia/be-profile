@@ -13,7 +13,7 @@ def profile_to_domain(profile_model: Profiles) -> Profile:
         avatar_url=profile_model.avatar_url,
         email=profile_model.email,
         created_at=profile_model.created_at,
-        updated_at=profile_model.updated_at
+        updated_at=profile_model.updated_at,
     )
 
 
@@ -26,7 +26,7 @@ def profile_to_model(profile: Profile) -> Profiles:
         avatar_url=profile.avatar_url,
         email=profile.email,
         created_at=profile.created_at,
-        updated_at=profile.updated_at
+        updated_at=profile.updated_at,
     )
 
 
@@ -47,7 +47,7 @@ def theme_to_domain(theme_model: Themes) -> Theme:
         glowOpacity=theme_model.glowOpacity,
         cards=theme_model.cards,
         circleColor=theme_model.circleColor,
-        updated_at=theme_model.updated_at
+        updated_at=theme_model.updated_at,
     )
 
 
@@ -68,6 +68,5 @@ def theme_to_model(theme: Theme) -> Themes:
         glowOpacity=theme.glowOpacity,
         cards=theme.cards,
         circleColor=theme.circleColor,
-        updated_at=theme.updated_at
+        updated_at=theme.updated_at,
     )
-

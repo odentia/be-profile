@@ -19,7 +19,9 @@ async def init_engine(url: str, echo: bool = False) -> AsyncEngine:
     global _engine
     if _engine is None:
         _engine = create_async_engine(url, echo=echo, pool_pre_ping=True)
-        log.info("Database engine initialized", extra={"url": url.split("@")[-1] if "@" in url else url})
+        log.info(
+            "Database engine initialized", extra={"url": url.split("@")[-1] if "@" in url else url}
+        )
     return _engine
 
 
@@ -42,4 +44,3 @@ async def close_engine() -> None:
 
 def get_session_factory() -> async_sessionmaker[AsyncSession] | None:
     return _session_factory
-

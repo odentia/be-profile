@@ -37,4 +37,3 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Expose settings for runtime access
     app.state.settings = settings
     return app
-

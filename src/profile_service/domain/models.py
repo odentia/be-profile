@@ -8,6 +8,7 @@ from typing import Optional
 @dataclass
 class Theme:
     """Тема пользователя"""
+
     user_id: str
     backgroundColor: str = "#14141A"
     backgroundColorMain: str = "#14141A"
@@ -32,6 +33,7 @@ class Theme:
 @dataclass
 class Profile:
     """Профиль пользователя"""
+
     user_id: str
     name: str
     description: Optional[str] = None
@@ -45,4 +47,3 @@ class Profile:
             self.created_at = datetime.utcnow()
         if self.updated_at is None:
             self.updated_at = datetime.utcnow()
-
