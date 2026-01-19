@@ -46,26 +46,39 @@ def upgrade() -> None:
         if 'circleColor' not in columns:
             op.add_column('themes', sa.Column('circleColor', sa.String(length=50), nullable=True))
         
-        # Заполняем новые поля из старых
-        op.execute("""
-            UPDATE themes SET
-                backgroundColor = COALESCE(main_bg_color, '#14141A'),
-                backgroundColorMain = COALESCE(main_bg_color, '#14141A'),
-                backgroundColorSub = COALESCE(second_bg_color, '#272A33'),
-                boxShadow = 'rgba(0, 0, 0, 0.1)',
-                danger = '#ff4444',
-                border = COALESCE(second_bg_color, '#272A33'),
-                subtext = '#a0a0a0',
-                text = COALESCE(text_color, '#ffffff'),
-                attention = '#ffaa00',
-                glowColor = COALESCE(contrast_color, '#6C63FF'),
-                glowOpacity = CASE 
-                    WHEN blur_transparency IS NOT NULL THEN CAST(blur_transparency / 100.0 AS TEXT)
-                    ELSE '0.3'
-                END,
-                cards = '#1e1e24',
-                circleColor = COALESCE(contrast_color, '#6C63FF')
-        """)
+        # Заполняем новые поля из старых только если старые поля есть
+        if 'text_color' in columns:
+            # Обновляем inspector чтобы получить актуальный список колонок после добавления
+            inspector = sa.inspect(conn)
+            columns_after = [col['name'].lower() for col in inspector.get_columns('themes')]
+            
+            # Проверяем есть ли данные для миграции и все ли колонки созданы
+            try:
+                result = conn.execute(sa.text("SELECT COUNT(*) FROM themes")).scalar()
+                if result and result > 0 and 'backgroundcolor' in columns_after:
+                    # Выполняем UPDATE используя реальные имена колонок (в нижнем регистре)
+                    op.execute("""
+                        UPDATE themes SET
+                            backgroundcolor = COALESCE(main_bg_color, '#14141A'),
+                            backgroundcolormain = COALESCE(main_bg_color, '#14141A'),
+                            backgroundcolorsub = COALESCE(second_bg_color, '#272A33'),
+                            boxshadow = 'rgba(0, 0, 0, 0.1)',
+                            danger = '#ff4444',
+                            border = COALESCE(second_bg_color, '#272A33'),
+                            subtext = '#a0a0a0',
+                            text = COALESCE(text_color, '#ffffff'),
+                            attention = '#ffaa00',
+                            glowcolor = COALESCE(contrast_color, '#6C63FF'),
+                            glowopacity = CASE 
+                                WHEN blur_transparency IS NOT NULL THEN CAST(blur_transparency / 100.0 AS TEXT)
+                                ELSE '0.3'
+                            END,
+                            cards = '#1e1e24',
+                            circlecolor = COALESCE(contrast_color, '#6C63FF')
+                    """)
+            except Exception as e:
+                # Если UPDATE не удался, пропускаем - это нормально для новых БД
+                pass
         
         # Удаляем старые поля только если они есть
         if 'text_color' in columns:

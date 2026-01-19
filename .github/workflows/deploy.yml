@@ -69,7 +69,7 @@ jobs:
                 networks:
                   - profile-service-network
                 healthcheck:
-                  test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+                  test: ["CMD-SHELL", "pg_isready -U ${{ secrets.POSTGRES_USER || 'profiles_user' }}"]
                   interval: 10s
                   timeout: 5s
                   retries: 5
