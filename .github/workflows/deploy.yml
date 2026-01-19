@@ -76,6 +76,8 @@ jobs:
                   POSTGRES_DB: $POSTGRES_DB
                   POSTGRES_USER: $POSTGRES_USER
                   POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+                ports:
+                  - "5438:5432"
                 volumes:
                   - postgres_data:/var/lib/postgresql/data
                 networks:
@@ -97,6 +99,7 @@ jobs:
                 environment:
                   - DATABASE_URL=$DATABASE_URL
                   - RABBITMQ_URL=$RABBITMQ_URL
+                  - CORS_ALLOW_ORIGINS=localhost:3000
                   - LOG_LEVEL=INFO
                 networks:
                   - profile-service-network

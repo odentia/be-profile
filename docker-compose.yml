@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-profiles}
       POSTGRES_USER: ${POSTGRES_USER:-profiles_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5438:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -32,7 +34,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - ALEMBIC_DATABASE_URL=${ALEMBIC_DATABASE_URL}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-*}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-localhost:3000}
       - ENV=prod
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
