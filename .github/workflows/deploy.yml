@@ -72,6 +72,9 @@ jobs:
                   - LOG_LEVEL=INFO
                 networks:
                   - profile-service-network
+            networks:
+              profile-service-network:
+                driver: bridge
 EOF
             
             # Добавляем внешнюю сеть RabbitMQ если указана
@@ -82,24 +85,17 @@ EOF
               sed -i "s|RABBITMQ_URL=\${RABBITMQ_URL}|RABBITMQ_URL=$RABBITMQ_URL|" docker-compose.yml
               # Добавляем сеть RabbitMQ в список сетей сервиса
               sed -i '/- profile-service-network/a\                  - rabbitmq-network' docker-compose.yml
-              cat >> docker-compose.yml << EOF
-            networks:
-              profile-service-network:
-                driver: bridge
-              rabbitmq-network:
-                external: true
-                name: $RABBITMQ_NETWORK
-EOF
+              # Добавляем определение внешней сети
+              echo "              rabbitmq-network:" >> docker-compose.yml
+              echo "                external: true" >> docker-compose.yml
+              echo "                name: $RABBITMQ_NETWORK" >> docker-compose.yml
             else
               # Если сеть не указана, подключаемся к bridge сети для доступа к RabbitMQ по IP
               sed -i '/- profile-service-network/a\                  - bridge' docker-compose.yml
-              cat >> docker-compose.yml << EOF
-            networks:
-              profile-service-network:
-                driver: bridge
-              bridge:
-                external: true
-                name: bridge
+              echo "              bridge:" >> docker-compose.yml
+              echo "                external: true" >> docker-compose.yml
+              echo "                name: bridge" >> docker-compose.yml
+            fi
             volumes:
               postgres_data:
             EOF
