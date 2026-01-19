@@ -118,25 +118,53 @@ def build_lifespan(settings: Settings):
             app.state.engine = engine
             app.state.session_factory = sf
 
-            # Initialize event publisher
-            publisher = EventPublisher(settings)
-            await publisher.connect()
-            app.state.event_publisher = publisher
-            log.info("Event publisher initialized successfully")
+            # Initialize event publisher с retry
+            publisher = None
+            max_retries = 5
+            retry_delay = 2
+            
+            for attempt in range(max_retries):
+                try:
+                    publisher = EventPublisher(settings)
+                    await publisher.connect()
+                    app.state.event_publisher = publisher
+                    log.info("Event publisher initialized successfully")
+                    break
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        log.warning(f"Failed to connect event publisher to RabbitMQ (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
+                        await asyncio.sleep(retry_delay)
+                    else:
+                        log.error(f"Failed to connect event publisher to RabbitMQ after {max_retries} attempts: {e}. Events will not be published.")
+                        app.state.event_publisher = None
 
-            # Initialize event consumer
-            consumer = EventConsumer(settings)
-            await consumer.connect()
+            # Initialize event consumer с retry
+            consumer = None
+            consumer_task = None
+            
+            for attempt in range(max_retries):
+                try:
+                    consumer = EventConsumer(settings)
+                    await consumer.connect()
 
-            # Регистрируем обработчики событий
-            consumer.register_handler("user_created", handle_user_created)
-            consumer.register_handler("user_deleted", handle_user_deleted)
+                    # Регистрируем обработчики событий
+                    consumer.register_handler("user_created", handle_user_created)
+                    consumer.register_handler("user_deleted", handle_user_deleted)
 
-            # Запускаем consumer в фоновой задаче
-            consumer_task = asyncio.create_task(start_consumer(consumer))
-            app.state.consumer = consumer
-            app.state.consumer_task = consumer_task
-            log.info("Event consumer started successfully")
+                    # Запускаем consumer в фоновой задаче
+                    consumer_task = asyncio.create_task(start_consumer(consumer))
+                    app.state.consumer = consumer
+                    app.state.consumer_task = consumer_task
+                    log.info("Event consumer started successfully")
+                    break
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        log.warning(f"Failed to connect event consumer to RabbitMQ (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
+                        await asyncio.sleep(retry_delay)
+                    else:
+                        log.error(f"Failed to connect event consumer to RabbitMQ after {max_retries} attempts: {e}. Events will not be consumed.")
+                        app.state.consumer = None
+                        app.state.consumer_task = None
 
             app.state.ready = True
             log.info("Service is up")
@@ -160,14 +188,20 @@ def build_lifespan(settings: Settings):
                 except asyncio.CancelledError:
                     pass
 
-            if hasattr(app.state, "consumer"):
-                await app.state.consumer.close()
-                log.info("Event consumer closed")
+            if hasattr(app.state, "consumer") and app.state.consumer:
+                try:
+                    await app.state.consumer.close()
+                    log.info("Event consumer closed")
+                except Exception as e:
+                    log.warning(f"Error closing consumer: {e}")
 
             # Close event publisher
-            if hasattr(app.state, "event_publisher"):
-                await app.state.event_publisher.close()
-                log.info("Event publisher closed")
+            if hasattr(app.state, "event_publisher") and app.state.event_publisher:
+                try:
+                    await app.state.event_publisher.close()
+                    log.info("Event publisher closed")
+                except Exception as e:
+                    log.warning(f"Error closing publisher: {e}")
 
             # Close DB engine
             await close_engine()
