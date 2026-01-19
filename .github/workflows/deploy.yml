@@ -36,17 +36,25 @@ jobs:
               RABBITMQ_NETWORK=""
             else
               echo "Found RabbitMQ container: $RABBITMQ_CONTAINER"
-              # Получаем все сети RabbitMQ контейнера и берем первую не-default
-              RABBITMQ_NETWORK=$(docker inspect $RABBITMQ_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{if ne $k "bridge"}}{{$k}}{{break}}{{end}}{{end}}' || docker inspect $RABBITMQ_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{break}}{{end}}' || echo "")
+              # Получаем все сети RabbitMQ контейнера
+              echo "Inspecting RabbitMQ container networks..."
+              docker inspect $RABBITMQ_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' || echo "Failed to inspect"
+              # Берем первую не-default сеть
+              RABBITMQ_NETWORK=$(docker inspect $RABBITMQ_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{if ne $k "bridge"}}{{$k}}{{break}}{{end}}{{end}}' 2>/dev/null || echo "")
               if [ -z "$RABBITMQ_NETWORK" ]; then
-                # Если не нашли через inspect, пробуем через docker network ls
+                echo "Trying to get first network..."
+                RABBITMQ_NETWORK=$(docker inspect $RABBITMQ_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{break}}{{end}}' 2>/dev/null || echo "")
+              fi
+              if [ -z "$RABBITMQ_NETWORK" ]; then
+                echo "Trying docker network ls..."
                 RABBITMQ_NETWORK=$(docker network ls --filter "name=rabbitmq" --format '{{.Name}}' | head -n1 || docker network ls --filter "name=infra" --format '{{.Name}}' | head -n1 || echo "")
               fi
-              echo "RabbitMQ network: '$RABBITMQ_NETWORK'"
+              echo "RabbitMQ network determined: '$RABBITMQ_NETWORK'"
               # Используем имя контейнера (лучше чем IP, так как имя не меняется)
               RABBITMQ_HOST="$RABBITMQ_CONTAINER"
               echo "Will use container name: $RABBITMQ_HOST"
             fi
+            echo "Final RABBITMQ_NETWORK value: '$RABBITMQ_NETWORK'"
             
             RABBITMQ_URL="amqp://$RABBITMQ_USER:$RABBITMQ_PASSWORD@${RABBITMQ_HOST}:5672/"
             echo "RABBITMQ_URL will be set to: amqp://$RABBITMQ_USER:***@${RABBITMQ_HOST}:5672/"
@@ -95,11 +103,17 @@ jobs:
             DOCKER_COMPOSE_EOF
             
             # Добавляем сеть RabbitMQ в список сетей profile-service, если она отличается
-            echo "Debug: RABBITMQ_NETWORK='$RABBITMQ_NETWORK'"
+            echo "=== Debug: Checking RABBITMQ_NETWORK ==="
+            echo "RABBITMQ_NETWORK='$RABBITMQ_NETWORK'"
+            echo "Is RABBITMQ_NETWORK non-empty? $([ -n "$RABBITMQ_NETWORK" ] && echo "YES" || echo "NO")"
+            echo "Is RABBITMQ_NETWORK different from profile-service-network? $([ "$RABBITMQ_NETWORK" != "profile-service-network" ] && echo "YES" || echo "NO")"
+            
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
-              echo "Adding RabbitMQ network $RABBITMQ_NETWORK to profile-service..."
+              echo "=== Adding RabbitMQ network $RABBITMQ_NETWORK to profile-service ==="
+              echo "Before modification - profile-service section:"
+              grep -A 10 "profile-service:" docker-compose.yml | head -12
+              
               # Находим строку с сетью profile-service-network в секции profile-service и добавляем после неё сеть RabbitMQ
-              # Ищем строку после "profile-service:" до следующей секции (которая начинается с меньшего отступа - 12 пробелов или меньше)
               awk -v rabbitmq_net="$RABBITMQ_NETWORK" '
                 /^              profile-service:$/ { in_service=1 }
                 /^            [^ ]/ && in_service && !/^            DOCKER_COMPOSE_EOF$/ { in_service=0 }
@@ -111,11 +125,16 @@ jobs:
                 { print }
               ' docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
               
-              echo "After modification - checking if network was added:"
-              grep -A 5 "profile-service:" docker-compose.yml | grep -A 5 "networks:" || echo "Could not find networks section"
+              echo "After modification - profile-service networks:"
+              grep -A 10 "profile-service:" docker-compose.yml | head -12
             else
-              echo "RabbitMQ network not needed or same as profile-service-network"
-              echo "RABBITMQ_NETWORK: '$RABBITMQ_NETWORK'"
+              echo "=== RabbitMQ network NOT added ==="
+              echo "Reason: RABBITMQ_NETWORK='$RABBITMQ_NETWORK'"
+              if [ -z "$RABBITMQ_NETWORK" ]; then
+                echo "RABBITMQ_NETWORK is empty"
+              elif [ "$RABBITMQ_NETWORK" = "profile-service-network" ]; then
+                echo "RABBITMQ_NETWORK equals profile-service-network"
+              fi
             fi
             
             cat >> docker-compose.yml << DOCKER_COMPOSE_EOF
