@@ -122,7 +122,7 @@ def build_lifespan(settings: Settings):
             publisher = None
             max_retries = 5
             retry_delay = 2
-            
+
             for attempt in range(max_retries):
                 try:
                     publisher = EventPublisher(settings)
@@ -132,16 +132,20 @@ def build_lifespan(settings: Settings):
                     break
                 except Exception as e:
                     if attempt < max_retries - 1:
-                        log.warning(f"Failed to connect event publisher to RabbitMQ (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
+                        log.warning(
+                            f"Failed to connect event publisher to RabbitMQ (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s..."
+                        )
                         await asyncio.sleep(retry_delay)
                     else:
-                        log.error(f"Failed to connect event publisher to RabbitMQ after {max_retries} attempts: {e}. Events will not be published.")
+                        log.error(
+                            f"Failed to connect event publisher to RabbitMQ after {max_retries} attempts: {e}. Events will not be published."
+                        )
                         app.state.event_publisher = None
 
             # Initialize event consumer с retry
             consumer = None
             consumer_task = None
-            
+
             for attempt in range(max_retries):
                 try:
                     consumer = EventConsumer(settings)
@@ -159,10 +163,14 @@ def build_lifespan(settings: Settings):
                     break
                 except Exception as e:
                     if attempt < max_retries - 1:
-                        log.warning(f"Failed to connect event consumer to RabbitMQ (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s...")
+                        log.warning(
+                            f"Failed to connect event consumer to RabbitMQ (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {retry_delay}s..."
+                        )
                         await asyncio.sleep(retry_delay)
                     else:
-                        log.error(f"Failed to connect event consumer to RabbitMQ after {max_retries} attempts: {e}. Events will not be consumed.")
+                        log.error(
+                            f"Failed to connect event consumer to RabbitMQ after {max_retries} attempts: {e}. Events will not be consumed."
+                        )
                         app.state.consumer = None
                         app.state.consumer_task = None
 
