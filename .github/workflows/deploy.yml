@@ -26,7 +26,7 @@ jobs:
             
             RABBITMQ_USER="${{ secrets.RABBITMQ_USER || 'guest' }}"
             RABBITMQ_PASSWORD="${{ secrets.RABBITMQ_PASSWORD || 'guest' }}"
-            RABBITMQ_HOST="${{ secrets.RABBITMQ_HOST || '172.19.0.2' }}"
+            RABBITMQ_HOST="${{ secrets.RABBITMQ_HOST || 'rabbitmq' }}"
             RABBITMQ_NETWORK="${{ secrets.RABBITMQ_NETWORK }}"
             RABBITMQ_URL="amqp://$RABBITMQ_USER:$RABBITMQ_PASSWORD@$RABBITMQ_HOST:5672/"
             
@@ -64,6 +64,25 @@ jobs:
                   - LOG_LEVEL=INFO
                 networks:
                   - profile-service-network
+EOF
+            
+            # Добавляем внешнюю сеть RabbitMQ если указана
+            if [ -n "$RABBITMQ_NETWORK" ]; then
+              # Используем имя контейнера если сеть указана
+              RABBITMQ_HOST="${{ secrets.RABBITMQ_CONTAINER_NAME || 'rabbitmq' }}"
+              RABBITMQ_URL="amqp://$RABBITMQ_USER:$RABBITMQ_PASSWORD@$RABBITMQ_HOST:5672/"
+              sed -i "s|RABBITMQ_URL=\${RABBITMQ_URL}|RABBITMQ_URL=$RABBITMQ_URL|" docker-compose.yml
+              cat >> docker-compose.yml << EOF
+                  - rabbitmq-network
+            networks:
+              profile-service-network:
+                driver: bridge
+              rabbitmq-network:
+                external: true
+                name: $RABBITMQ_NETWORK
+EOF
+            else
+              cat >> docker-compose.yml << EOF
             networks:
               profile-service-network:
                 driver: bridge
