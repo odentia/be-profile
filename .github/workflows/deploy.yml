@@ -38,7 +38,7 @@ jobs:
             
             RABBITMQ_URL="amqp://$RABBITMQ_USER:$RABBITMQ_PASSWORD@$RABBITMQ_HOST:5672/"
             
-            cat > docker-compose.yml << EOF
+            cat > docker-compose.yml << 'DOCKER_COMPOSE_EOF'
             services:
               postgres:
                 image: postgres:16-alpine
@@ -75,7 +75,7 @@ jobs:
             networks:
               profile-service-network:
                 driver: bridge
-EOF
+DOCKER_COMPOSE_EOF
             
             # Добавляем внешнюю сеть RabbitMQ если указана
             if [ -n "$RABBITMQ_NETWORK" ]; then
