@@ -61,15 +61,15 @@ jobs:
                 container_name: profile-service-postgres
                 restart: unless-stopped
                 environment:
-                  POSTGRES_DB: ${POSTGRES_DB}
-                  POSTGRES_USER: ${POSTGRES_USER}
-                  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+                  POSTGRES_DB: $POSTGRES_DB
+                  POSTGRES_USER: $POSTGRES_USER
+                  POSTGRES_PASSWORD: $POSTGRES_PASSWORD
                 volumes:
                   - postgres_data:/var/lib/postgresql/data
                 networks:
                   - profile-service-network
                 healthcheck:
-                  test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+                  test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
                   interval: 10s
                   timeout: 5s
                   retries: 5
@@ -83,31 +83,29 @@ jobs:
                 ports:
                   - "8001:8001"
                 environment:
-                  - DATABASE_URL=${DATABASE_URL}
-                  - RABBITMQ_URL=${RABBITMQ_URL}
+                  - DATABASE_URL=$DATABASE_URL
+                  - RABBITMQ_URL=$RABBITMQ_URL
                   - LOG_LEVEL=INFO
                 networks:
                   - profile-service-network
-            EOF
+            DOCKER_COMPOSE_EOF
             
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
-              cat >> docker-compose.yml << EOF
-                  - ${RABBITMQ_NETWORK}
-            EOF
+              sed -i '/- profile-service-network/a\                  - '"$RABBITMQ_NETWORK" docker-compose.yml
             fi
             
-            cat >> docker-compose.yml << EOF
+            cat >> docker-compose.yml << DOCKER_COMPOSE_EOF
             
             networks:
               profile-service-network:
                 driver: bridge
-            EOF
+            DOCKER_COMPOSE_EOF
             
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
-              cat >> docker-compose.yml << EOF
-              ${RABBITMQ_NETWORK}:
+              cat >> docker-compose.yml << DOCKER_COMPOSE_EOF
+              $RABBITMQ_NETWORK:
                 external: true
-            EOF
+            DOCKER_COMPOSE_EOF
             fi
             
             cat >> docker-compose.yml << EOF
