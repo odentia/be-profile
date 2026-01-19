@@ -188,8 +188,11 @@ jobs:
             docker compose run --rm profile-service uv run alembic upgrade head || echo "Migration failed or not needed"
             
             echo "Starting containers..."
-            echo "Final docker-compose.yml - profile-service networks:"
-            sed -n '/^              profile-service:$/,/^            DOCKER_COMPOSE_EOF$/p' docker-compose.yml | grep -A 5 "networks:" || echo "Could not find networks section"
+            echo "=== Checking docker-compose.yml before start ==="
+            echo "Full docker-compose.yml content:"
+            cat docker-compose.yml
+            echo "=== End of docker-compose.yml ==="
+            
             # Принудительно пересоздаем контейнер, чтобы применить изменения сетей
             docker compose up -d --force-recreate profile-service || docker compose up -d || exit 1
             
