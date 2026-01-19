@@ -104,12 +104,16 @@ jobs:
             
             # Добавляем сеть RabbitMQ в список сетей profile-service, если она отличается
             echo "=== Debug: RABBITMQ_NETWORK='$RABBITMQ_NETWORK' ==="
+            echo "Expected network: infra_rabbitmq_network"
+            
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
-              echo "Adding RabbitMQ network $RABBITMQ_NETWORK to profile-service..."
-              # Простой подход: находим строку с сетью profile-service-network после profile-service:
-              # Используем awk для поиска строки в контексте profile-service
+              echo "=== Adding RabbitMQ network '$RABBITMQ_NETWORK' to profile-service ==="
+              echo "Before modification:"
+              grep -A 6 "profile-service:" docker-compose.yml | head -8
+              
+              # Используем awk для добавления сети после profile-service-network
               awk -v rabbitmq_net="$RABBITMQ_NETWORK" '
-                /^              profile-service:$/ { in_service=1; print; next }
+                /^              profile-service:$/ { in_service=1 }
                 in_service && /^                  - profile-service-network$/ {
                   print
                   print "                  - " rabbitmq_net
@@ -119,10 +123,16 @@ jobs:
                 { print }
               ' docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
               
-              echo "Verifying network was added:"
-              grep -A 5 "profile-service:" docker-compose.yml | grep -A 5 "networks:"
+              echo "After modification:"
+              grep -A 6 "profile-service:" docker-compose.yml | head -8
             else
-              echo "RabbitMQ network NOT added. RABBITMQ_NETWORK='$RABBITMQ_NETWORK'"
+              echo "=== RabbitMQ network NOT added ==="
+              if [ -z "$RABBITMQ_NETWORK" ]; then
+                echo "Reason: RABBITMQ_NETWORK is empty"
+              elif [ "$RABBITMQ_NETWORK" = "profile-service-network" ]; then
+                echo "Reason: RABBITMQ_NETWORK equals profile-service-network"
+              fi
+              echo "RABBITMQ_NETWORK='$RABBITMQ_NETWORK'"
             fi
             
             cat >> docker-compose.yml << DOCKER_COMPOSE_EOF
