@@ -93,6 +93,9 @@ jobs:
             # Добавляем сеть RabbitMQ в список сетей profile-service, если она отличается
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
               echo "Adding RabbitMQ network $RABBITMQ_NETWORK to profile-service..."
+              echo "Before modification:"
+              grep -A 3 "profile-service:" docker-compose.yml | grep -A 3 "networks:" || echo "Could not find networks section"
+              
               # Используем awk для более точного добавления сети только в секцию profile-service
               awk -v rabbitmq_net="$RABBITMQ_NETWORK" '
                 /^              profile-service:$/ { in_profile_service=1 }
@@ -104,8 +107,11 @@ jobs:
                 }
                 { print }
               ' docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
-              echo "Network added. Verifying..."
-              grep -A 2 "profile-service:" docker-compose.yml | grep -A 2 "networks:" || echo "Warning: Could not verify network addition"
+              
+              echo "After modification:"
+              grep -A 3 "profile-service:" docker-compose.yml | grep -A 3 "networks:" || echo "Could not find networks section"
+            else
+              echo "RabbitMQ network not needed or same as profile-service-network"
             fi
             
             cat >> docker-compose.yml << DOCKER_COMPOSE_EOF
@@ -165,5 +171,16 @@ jobs:
             
             echo "Checking profile-service environment variables:"
             docker exec profile-service env | grep RABBITMQ_URL || echo "RABBITMQ_URL not found in environment"
+            
+            echo "Checking profile-service networks:"
+            docker inspect profile-service --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' || echo "Failed to inspect container"
+            
+            if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
+              echo "Verifying RabbitMQ network connection..."
+              docker exec profile-service ping -c 2 rabbitmq > /dev/null 2>&1 && echo "✅ RabbitMQ hostname resolves" || echo "⚠️  RabbitMQ hostname does not resolve"
+            fi
+            
+            echo "Checking for RabbitMQ connection errors in logs..."
+            docker compose logs profile-service | grep -i "rabbitmq\|amqp" | tail -10 || echo "No RabbitMQ-related logs found"
             
             docker image prune -f
