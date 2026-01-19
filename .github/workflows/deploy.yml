@@ -108,23 +108,31 @@ jobs:
             
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
               echo "=== Adding RabbitMQ network '$RABBITMQ_NETWORK' to profile-service ==="
-              echo "Before modification:"
-              grep -A 6 "profile-service:" docker-compose.yml | head -8
+              echo "Before modification - networks section:"
+              sed -n '/^  profile-service:$/,/^networks:$/p' docker-compose.yml | grep -A 3 "networks:"
               
-              # Используем awk для добавления сети после profile-service-network
-              awk -v rabbitmq_net="$RABBITMQ_NETWORK" '
-                /^              profile-service:$/ { in_service=1 }
-                in_service && /^                  - profile-service-network$/ {
-                  print
-                  print "                  - " rabbitmq_net
-                  in_service=0
-                  next
-                }
-                { print }
-              ' docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
+              # Используем sed для добавления сети после profile-service-network
+              # Ищем строку в секции profile-service (6 пробелов для списка сетей)
+              sed -i '/^  profile-service:$/,/^networks:$/{
+                /^      - profile-service-network$/a\
+      - '"$RABBITMQ_NETWORK"'
+              }' docker-compose.yml || {
+                echo "sed failed, trying alternative method..."
+                # Альтернативный метод: используем awk
+                awk -v rabbitmq_net="$RABBITMQ_NETWORK" '
+                  /^  profile-service:$/ { in_service=1 }
+                  in_service && /^      - profile-service-network$/ {
+                    print
+                    print "      - " rabbitmq_net
+                    in_service=0
+                    next
+                  }
+                  { print }
+                ' docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
+              }
               
-              echo "After modification:"
-              grep -A 6 "profile-service:" docker-compose.yml | head -8
+              echo "After modification - networks section:"
+              sed -n '/^  profile-service:$/,/^networks:$/p' docker-compose.yml | grep -A 3 "networks:"
             else
               echo "=== RabbitMQ network NOT added ==="
               if [ -z "$RABBITMQ_NETWORK" ]; then
