@@ -92,8 +92,20 @@ jobs:
             
             # Добавляем сеть RabbitMQ в список сетей profile-service, если она отличается
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
-              # Просто добавляем сеть после profile-service-network в секции networks
-              sed -i '/^                  - profile-service-network$/a\                  - '"$RABBITMQ_NETWORK" docker-compose.yml
+              echo "Adding RabbitMQ network $RABBITMQ_NETWORK to profile-service..."
+              # Используем awk для более точного добавления сети только в секцию profile-service
+              awk -v rabbitmq_net="$RABBITMQ_NETWORK" '
+                /^              profile-service:$/ { in_profile_service=1 }
+                /^            DOCKER_COMPOSE_EOF$/ { in_profile_service=0 }
+                /^                  - profile-service-network$/ && in_profile_service {
+                  print
+                  print "                  - " rabbitmq_net
+                  next
+                }
+                { print }
+              ' docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
+              echo "Network added. Verifying..."
+              grep -A 2 "profile-service:" docker-compose.yml | grep -A 2 "networks:" || echo "Warning: Could not verify network addition"
             fi
             
             cat >> docker-compose.yml << DOCKER_COMPOSE_EOF
@@ -115,6 +127,9 @@ jobs:
             volumes:
               postgres_data:
             DOCKER_COMPOSE_EOF
+            
+            echo "Generated docker-compose.yml:"
+            cat docker-compose.yml
             
             cat > .env << EOF
             POSTGRES_DB=${POSTGRES_DB}
