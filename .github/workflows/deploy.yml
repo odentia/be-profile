@@ -38,7 +38,7 @@ jobs:
             
             RABBITMQ_URL="amqp://$RABBITMQ_USER:$RABBITMQ_PASSWORD@$RABBITMQ_HOST:5672/"
             
-            cat > docker-compose.yml << 'DOCKER_COMPOSE_EOF'
+            cat > docker-compose.yml << EOF
             services:
               postgres:
                 image: postgres:16-alpine
@@ -75,27 +75,9 @@ jobs:
             networks:
               profile-service-network:
                 driver: bridge
-DOCKER_COMPOSE_EOF
-            
-            # Добавляем внешнюю сеть RabbitMQ если указана
-            if [ -n "$RABBITMQ_NETWORK" ]; then
-              # Обновляем RABBITMQ_URL с именем контейнера
-              RABBITMQ_URL="amqp://$RABBITMQ_USER:$RABBITMQ_PASSWORD@$RABBITMQ_CONTAINER_NAME:5672/"
-              # Заменяем RABBITMQ_URL в docker-compose.yml
-              sed -i "s|RABBITMQ_URL=\${RABBITMQ_URL}|RABBITMQ_URL=$RABBITMQ_URL|" docker-compose.yml
-              # Добавляем сеть RabbitMQ в список сетей сервиса
-              sed -i '/- profile-service-network/a\                  - rabbitmq-network' docker-compose.yml
-              # Добавляем определение внешней сети
-              echo "              rabbitmq-network:" >> docker-compose.yml
-              echo "                external: true" >> docker-compose.yml
-              echo "                name: $RABBITMQ_NETWORK" >> docker-compose.yml
-            else
-              # Если сеть не указана, подключаемся к bridge сети для доступа к RabbitMQ по IP
-              sed -i '/- profile-service-network/a\                  - bridge' docker-compose.yml
-              echo "              bridge:" >> docker-compose.yml
-              echo "                external: true" >> docker-compose.yml
-              echo "                name: bridge" >> docker-compose.yml
-            fi
+            volumes:
+              postgres_data:
+            EOF
             volumes:
               postgres_data:
             EOF
