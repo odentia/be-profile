@@ -26,17 +26,26 @@ jobs:
             
             RABBITMQ_USER="${{ secrets.RABBITMQ_USER || 'guest' }}"
             RABBITMQ_PASSWORD="${{ secrets.RABBITMQ_PASSWORD || 'guest' }}"
-            RABBITMQ_CONTAINER_NAME="${{ secrets.RABBITMQ_CONTAINER_NAME || 'rabbitmq' }}"
-            RABBITMQ_NETWORK="${{ secrets.RABBITMQ_NETWORK }}"
             
-            # Если указана сеть - используем имя контейнера, иначе IP
-            if [ -n "$RABBITMQ_NETWORK" ]; then
-              RABBITMQ_HOST="$RABBITMQ_CONTAINER_NAME"
+            # Находим контейнер RabbitMQ по порту 5672 или имени
+            echo "Searching for RabbitMQ container..."
+            RABBITMQ_CONTAINER=$(docker ps --filter "publish=5672" --format '{{.Names}}' | head -n1 || docker ps --format '{{.Names}}' | grep -i rabbitmq | head -n1 || echo "")
+            if [ -z "$RABBITMQ_CONTAINER" ]; then
+              echo "RabbitMQ container not found, using known IP 172.19.0.2"
+              RABBITMQ_HOST="172.19.0.2"
+              RABBITMQ_NETWORK=""
             else
-              RABBITMQ_HOST="${{ secrets.RABBITMQ_HOST || '172.19.0.2' }}"
+              echo "Found RabbitMQ container: $RABBITMQ_CONTAINER"
+              # Получаем сеть RabbitMQ контейнера
+              RABBITMQ_NETWORK=$(docker inspect $RABBITMQ_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}' | head -n1 || echo "")
+              echo "RabbitMQ network: $RABBITMQ_NETWORK"
+              # Используем имя контейнера (лучше чем IP, так как имя не меняется)
+              RABBITMQ_HOST="$RABBITMQ_CONTAINER"
+              echo "Will use container name: $RABBITMQ_HOST"
             fi
             
-            RABBITMQ_URL="amqp://$RABBITMQ_USER:$RABBITMQ_PASSWORD@$RABBITMQ_HOST:5672/"
+            RABBITMQ_URL="amqp://$RABBITMQ_USER:$RABBITMQ_PASSWORD@${RABBITMQ_HOST}:5672/"
+            echo "RABBITMQ_URL will be set to: amqp://$RABBITMQ_USER:***@${RABBITMQ_HOST}:5672/"
             
             cat > docker-compose.yml << EOF
             services:
@@ -72,12 +81,30 @@ jobs:
                   - LOG_LEVEL=INFO
                 networks:
                   - profile-service-network
+            EOF
+            
+            if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
+              cat >> docker-compose.yml << EOF
+                  - ${RABBITMQ_NETWORK}
+            EOF
+            fi
+            
+            cat >> docker-compose.yml << EOF
+            
             networks:
               profile-service-network:
                 driver: bridge
-            volumes:
-              postgres_data:
             EOF
+            
+            if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
+              cat >> docker-compose.yml << EOF
+              ${RABBITMQ_NETWORK}:
+                external: true
+            EOF
+            fi
+            
+            cat >> docker-compose.yml << EOF
+            
             volumes:
               postgres_data:
             EOF
@@ -113,5 +140,8 @@ jobs:
             
             echo "Checking logs..."
             docker compose logs --tail=50
+            
+            echo "Checking profile-service environment variables:"
+            docker exec profile-service env | grep RABBITMQ_URL || echo "RABBITMQ_URL not found in environment"
             
             docker image prune -f
