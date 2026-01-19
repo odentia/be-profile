@@ -90,8 +90,10 @@ jobs:
                   - profile-service-network
             DOCKER_COMPOSE_EOF
             
+            # Добавляем сеть RabbitMQ в список сетей profile-service, если она отличается
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
-              sed -i '/- profile-service-network/a\                  - '"$RABBITMQ_NETWORK" docker-compose.yml
+              # Просто добавляем сеть после profile-service-network в секции networks
+              sed -i '/^                  - profile-service-network$/a\                  - '"$RABBITMQ_NETWORK" docker-compose.yml
             fi
             
             cat >> docker-compose.yml << DOCKER_COMPOSE_EOF
@@ -108,7 +110,7 @@ jobs:
             DOCKER_COMPOSE_EOF
             fi
             
-            cat >> docker-compose.yml << EOF
+            cat >> docker-compose.yml << DOCKER_COMPOSE_EOF
             
             volumes:
               postgres_data:
