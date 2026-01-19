@@ -212,7 +212,16 @@ jobs:
             
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
               echo "Verifying RabbitMQ network connection..."
-              docker exec profile-service ping -c 2 rabbitmq > /dev/null 2>&1 && echo "✅ RabbitMQ hostname resolves" || echo "⚠️  RabbitMQ hostname does not resolve"
+              echo "Trying to resolve 'rabbitmq' hostname..."
+              docker exec profile-service ping -c 2 rabbitmq > /dev/null 2>&1 && echo "✅ RabbitMQ hostname 'rabbitmq' resolves" || echo "⚠️  RabbitMQ hostname 'rabbitmq' does not resolve"
+              
+              echo "Checking what containers are in $RABBITMQ_NETWORK network..."
+              docker network inspect $RABBITMQ_NETWORK --format '{{range .Containers}}{{.Name}} ({{.IPv4Address}}){{"\n"}}{{end}}' || echo "Failed to inspect network"
+              
+              echo "Checking RabbitMQ container name and aliases..."
+              if [ -n "$RABBITMQ_CONTAINER" ]; then
+                docker inspect $RABBITMQ_CONTAINER --format 'Name: {{.Name}}{{"\n"}}Aliases in networks:{{range $net, $conf := .NetworkSettings.Networks}}{{"\n"}}  {{$net}}: {{range $conf.Aliases}}{{.}} {{end}}{{end}}' || echo "Failed to inspect RabbitMQ container"
+              fi
             fi
             
             echo "Checking for RabbitMQ connection errors in logs..."
