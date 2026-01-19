@@ -36,9 +36,13 @@ jobs:
               RABBITMQ_NETWORK=""
             else
               echo "Found RabbitMQ container: $RABBITMQ_CONTAINER"
-              # Получаем сеть RabbitMQ контейнера
-              RABBITMQ_NETWORK=$(docker inspect $RABBITMQ_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}' | head -n1 || echo "")
-              echo "RabbitMQ network: $RABBITMQ_NETWORK"
+              # Получаем все сети RabbitMQ контейнера и берем первую не-default
+              RABBITMQ_NETWORK=$(docker inspect $RABBITMQ_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{if ne $k "bridge"}}{{$k}}{{break}}{{end}}{{end}}' || docker inspect $RABBITMQ_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{break}}{{end}}' || echo "")
+              if [ -z "$RABBITMQ_NETWORK" ]; then
+                # Если не нашли через inspect, пробуем через docker network ls
+                RABBITMQ_NETWORK=$(docker network ls --filter "name=rabbitmq" --format '{{.Name}}' | head -n1 || docker network ls --filter "name=infra" --format '{{.Name}}' | head -n1 || echo "")
+              fi
+              echo "RabbitMQ network: '$RABBITMQ_NETWORK'"
               # Используем имя контейнера (лучше чем IP, так как имя не меняется)
               RABBITMQ_HOST="$RABBITMQ_CONTAINER"
               echo "Will use container name: $RABBITMQ_HOST"
@@ -91,27 +95,24 @@ jobs:
             DOCKER_COMPOSE_EOF
             
             # Добавляем сеть RabbitMQ в список сетей profile-service, если она отличается
+            echo "Debug: RABBITMQ_NETWORK='$RABBITMQ_NETWORK'"
             if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
               echo "Adding RabbitMQ network $RABBITMQ_NETWORK to profile-service..."
-              echo "Before modification:"
-              grep -A 3 "profile-service:" docker-compose.yml | grep -A 3 "networks:" || echo "Could not find networks section"
+              echo "Before modification - networks section:"
+              sed -n '/^              profile-service:$/,/^            DOCKER_COMPOSE_EOF$/p' docker-compose.yml | grep -A 5 "networks:" || echo "Could not find networks section"
               
-              # Используем awk для более точного добавления сети только в секцию profile-service
-              awk -v rabbitmq_net="$RABBITMQ_NETWORK" '
-                /^              profile-service:$/ { in_profile_service=1 }
-                /^            DOCKER_COMPOSE_EOF$/ { in_profile_service=0 }
-                /^                  - profile-service-network$/ && in_profile_service {
-                  print
-                  print "                  - " rabbitmq_net
-                  next
-                }
-                { print }
-              ' docker-compose.yml > docker-compose.yml.tmp && mv docker-compose.yml.tmp docker-compose.yml
+              # Используем простой sed для добавления сети после profile-service-network в секции profile-service
+              # Ищем строку в диапазоне от profile-service до DOCKER_COMPOSE_EOF
+              sed -i '/^              profile-service:$/,/^            DOCKER_COMPOSE_EOF$/{ 
+                /^                  - profile-service-network$/a\
+                  - '"$RABBITMQ_NETWORK"'
+              }' docker-compose.yml
               
-              echo "After modification:"
-              grep -A 3 "profile-service:" docker-compose.yml | grep -A 3 "networks:" || echo "Could not find networks section"
+              echo "After modification - networks section:"
+              sed -n '/^              profile-service:$/,/^            DOCKER_COMPOSE_EOF$/p' docker-compose.yml | grep -A 5 "networks:" || echo "Could not find networks section"
             else
               echo "RabbitMQ network not needed or same as profile-service-network"
+              echo "RABBITMQ_NETWORK: '$RABBITMQ_NETWORK'"
             fi
             
             cat >> docker-compose.yml << DOCKER_COMPOSE_EOF
@@ -137,6 +138,13 @@ jobs:
             echo "Generated docker-compose.yml:"
             cat docker-compose.yml
             
+            echo "Checking if RabbitMQ network was added..."
+            if [ -n "$RABBITMQ_NETWORK" ] && [ "$RABBITMQ_NETWORK" != "profile-service-network" ]; then
+              echo "RabbitMQ network should be: $RABBITMQ_NETWORK"
+              echo "Checking networks section in profile-service:"
+              sed -n '/^              profile-service:$/,/^            DOCKER_COMPOSE_EOF$/p' docker-compose.yml | grep -A 5 "networks:" || echo "Could not find networks section"
+            fi
+            
             cat > .env << EOF
             POSTGRES_DB=${POSTGRES_DB}
             POSTGRES_USER=${POSTGRES_USER}
@@ -158,7 +166,10 @@ jobs:
             docker compose run --rm profile-service uv run alembic upgrade head || echo "Migration failed or not needed"
             
             echo "Starting containers..."
-            docker compose up -d || exit 1
+            echo "Final docker-compose.yml - profile-service networks:"
+            sed -n '/^              profile-service:$/,/^            DOCKER_COMPOSE_EOF$/p' docker-compose.yml | grep -A 5 "networks:" || echo "Could not find networks section"
+            # Принудительно пересоздаем контейнер, чтобы применить изменения сетей
+            docker compose up -d --force-recreate profile-service || docker compose up -d || exit 1
             
             echo "Waiting for containers to start..."
             sleep 5
