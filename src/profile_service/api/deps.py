@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from profile_service.core.config import Settings
 from profile_service.core.logging import get_logger
-from profile_service.domain.services import PasswordService
+from profile_service.domain.services import PasswordService, JWTService
 from profile_service.repo.sql.repositories import SQLProfileRepository, SQLThemeRepository
 from profile_service.mq.publisher import EventPublisher
 
@@ -47,6 +47,11 @@ def get_password_service() -> PasswordService:
     return PasswordService()
 
 
+def get_jwt_service(settings: SettingsDep) -> JWTService:
+    """Получить сервис для работы с JWT"""
+    return JWTService(settings)
+
+
 def get_profile_repo(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> SQLProfileRepository:
@@ -65,39 +70,64 @@ def get_event_publisher(request: Request) -> EventPublisher | None:
 
 
 async def get_current_token(
-    creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    request: Request,
+    creds: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)] = None,
 ) -> str:
-    return "" if creds is None else creds.credentials
-
-
-async def get_current_user_id(request: Request) -> str:
-    """Получить ID текущего пользователя из JWT токена"""
-    # Извлекаем токен из заголовка Authorization
+    """Получить токен из кук или заголовка Authorization (приоритет у кук)
+    
+    Работает в двух режимах:
+    1. С куками (для браузеров) - проверяет куку access_token
+    2. С заголовками (для API клиентов) - проверяет Authorization: Bearer <token>
+    """
+    # 1. Проверяем куки (приоритет для HTTP-only, используется браузерами)
+    access_token_cookie = request.cookies.get("access_token")
+    if access_token_cookie:
+        return access_token_cookie
+    
+    # 2. Если нет в куках, проверяем заголовок Authorization (для API клиентов)
+    if creds and creds.credentials:
+        return creds.credentials
+    
+    # Также проверяем заголовок напрямую (на случай, если HTTPBearer не сработал)
     auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
+    if auth_header and auth_header.startswith("Bearer "):
+        return auth_header.split(" ")[1]
+    
+    return ""
+
+
+async def get_current_user_id(
+    request: Request,
+    token: Annotated[str, Depends(get_current_token)],
+    settings: SettingsDep,
+) -> str:
+    """Получить ID текущего пользователя из JWT токена"""
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing bearer token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = auth_header.split(" ")[1]
-
-    # TODO: Интеграция с auth-service для проверки токена
-    # Пока проверяем локально через JWT
-    from jose import jwt
-
-    settings = request.app.state.settings
-    try:
-        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        return user_id
-    except Exception:
+    # Проверяем JWT токен через JWTService
+    jwt_service = JWTService(settings)
+    payload = jwt_service.verify_access_token(token)
+    if not payload:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
         )
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing user ID",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return user_id
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]

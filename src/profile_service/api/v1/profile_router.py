@@ -18,7 +18,9 @@ from profile_service.api.deps import (
     get_password_service,
     get_current_user_id,
     get_event_publisher,
+    SettingsDep,
 )
+from typing import Annotated
 
 # Создаем роутер для профиля
 profile_router = APIRouter(prefix="/profile", tags=["Profile"])
@@ -26,12 +28,11 @@ profile_router = APIRouter(prefix="/profile", tags=["Profile"])
 
 @profile_router.get("/me", response_model=ProfileResponse)
 async def get_profile(
-    request: Request,
+    user_id: Annotated[str, Depends(get_current_user_id)],
     profile_repo=Depends(get_profile_repo),
     event_publisher=Depends(get_event_publisher),
 ):
     """Получить профиль текущего пользователя"""
-    user_id = await get_current_user_id(request)
     service = ProfileService(profile_repo, event_publisher)
     result = await service.get_profile(user_id)
 
@@ -44,12 +45,11 @@ async def get_profile(
 @profile_router.put("/me", response_model=ProfileResponse)
 async def update_profile(
     request_data: ProfileUpdateRequest,
-    request: Request,
+    user_id: Annotated[str, Depends(get_current_user_id)],
     profile_repo=Depends(get_profile_repo),
     event_publisher=Depends(get_event_publisher),
 ):
     """Обновить профиль текущего пользователя"""
-    user_id = await get_current_user_id(request)
     service = ProfileService(profile_repo, event_publisher)
     result = await service.update_profile(user_id, request_data)
 
@@ -61,12 +61,11 @@ async def update_profile(
 
 @profile_router.get("/theme", response_model=ThemeResponse)
 async def get_theme(
-    request: Request,
+    user_id: Annotated[str, Depends(get_current_user_id)],
     theme_repo=Depends(get_theme_repo),
     event_publisher=Depends(get_event_publisher),
 ):
     """Получить тему текущего пользователя"""
-    user_id = await get_current_user_id(request)
     service = ThemeService(theme_repo, event_publisher)
     result = await service.get_theme(user_id)
 
@@ -76,12 +75,11 @@ async def get_theme(
 @profile_router.put("/theme", response_model=ThemeResponse)
 async def update_theme(
     request_data: ThemeUpdateRequest,
-    request: Request,
+    user_id: Annotated[str, Depends(get_current_user_id)],
     theme_repo=Depends(get_theme_repo),
     event_publisher=Depends(get_event_publisher),
 ):
     """Обновить тему текущего пользователя"""
-    user_id = await get_current_user_id(request)
     service = ThemeService(theme_repo, event_publisher)
     result = await service.update_theme(user_id, request_data)
 
@@ -105,12 +103,11 @@ async def get_theme_by_user_id(
 @profile_router.post("/theme/import", response_model=ThemeResponse)
 async def import_theme(
     request_data: ThemeImportRequest,
-    request: Request,
+    target_user_id: Annotated[str, Depends(get_current_user_id)],
     theme_repo=Depends(get_theme_repo),
     event_publisher=Depends(get_event_publisher),
 ):
     """Импортировать тему от другого пользователя в свой профиль"""
-    target_user_id = await get_current_user_id(request)
     service = ThemeService(theme_repo, event_publisher)
     result = await service.import_theme(target_user_id, request_data.user_id)
 
@@ -123,11 +120,10 @@ async def import_theme(
 @profile_router.post("/change-password")
 async def change_password(
     request_data: PasswordChangeRequest,
-    request: Request,
+    user_id: Annotated[str, Depends(get_current_user_id)],
     password_service=Depends(get_password_service),
 ):
     """Изменить пароль пользователя"""
-    await get_current_user_id(request)  # Проверка авторизации
     # TODO: Интеграция с auth-service через clients/auth_client.py
     # auth_client = get_auth_client()
     # success = await auth_client.change_password(user_id, request_data.current_password, request_data.new_password)
@@ -138,13 +134,12 @@ async def change_password(
 @profile_router.delete("/account")
 async def delete_account(
     request_data: DeleteAccountRequest,
-    request: Request,
+    user_id: Annotated[str, Depends(get_current_user_id)],
     profile_repo=Depends(get_profile_repo),
     theme_repo=Depends(get_theme_repo),
     event_publisher=Depends(get_event_publisher),
 ):
     """Удалить аккаунт пользователя"""
-    user_id = await get_current_user_id(request)
     # TODO: Интеграция с auth-service для проверки пароля
     # auth_client = get_auth_client()
     # verified = await auth_client.verify_password(user_id, request_data.password)

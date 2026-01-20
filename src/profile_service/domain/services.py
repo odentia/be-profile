@@ -3,8 +3,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
+from jose import JWTError, jwt
 from passlib.context import CryptContext
-from profile_service.domain.models import Theme
+from profile_service.core.config import Settings
+from profile_service.domain.models import Profile, Theme
 from profile_service.domain.repositories import ProfileRepository, ThemeRepository
 from profile_service.domain.events import (
     ProfileUpdatedEvent,
@@ -16,19 +18,39 @@ from profile_service.dtos.http import (
     ProfileResponse,
     ThemeUpdateRequest,
     ThemeResponse,
+    ThemeImportRequest,
+    PasswordChangeRequest,
 )
+
+
+class JWTService:
+    """Сервис для работы с JWT токенами (только проверка)"""
+    
+    def __init__(self, settings: Settings):
+        self.secret_key = settings.jwt_secret_key
+        self.algorithm = settings.jwt_algorithm
+    
+    def verify_access_token(self, token: str) -> Optional[dict]:
+        """Проверка access токена"""
+        try:
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            if payload.get("type") != "access":
+                return None
+            return payload
+        except JWTError:
+            return None
 
 
 class PasswordService:
     """Сервис для работы с паролями"""
-
+    
     def __init__(self):
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+    
     def hash_password(self, password: str) -> str:
         """Хеширование пароля"""
         return self.pwd_context.hash(password)
-
+    
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Проверка пароля"""
         return self.pwd_context.verify(plain_password, hashed_password)
